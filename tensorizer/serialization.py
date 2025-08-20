@@ -310,7 +310,7 @@ class _FileHeader:
             feature_flag_bytes, "little", signed=False
         )
         feature_flags = _FileFeatureFlags(feature_flag_int)
-        if not (0 <= feature_flags <= max(_FileFeatureFlags)):
+        if not (0 <= feature_flags < (max(_FileFeatureFlags) << 1)):
             raise ValueError(
                 f"Unsupported feature flags: {_FileFeatureFlags!r}"
             )
