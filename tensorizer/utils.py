@@ -205,7 +205,7 @@ class CPUMemoryUsage(NamedTuple):
                 p.memory_info().rss for p in process.children(True)
             )
         vmem = psutil.virtual_memory()
-        return cls(maxrss, vmem.free)
+        return cls(maxrss, vmem.available)
 
     def __str__(self):
         return "CPU: (maxrss: {:,}MiB F: {:,}MiB)".format(

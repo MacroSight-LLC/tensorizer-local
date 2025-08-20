@@ -5,12 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.12.0] - 2025-08-20
 
 ### Added
 
 - Tensors with long dimensions (≥ `2 ** 32` elements in a single dimension)
   can now be serialized and deserialized
+
+### Changed
+
+- `tensorizer.utils.CPUMemoryUsage.free` now reports available memory
+  rather than free memory
 
 ### Fixed
 
@@ -504,7 +509,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `get_gpu_name`
   - `no_init_or_tensor`
 
-[Unreleased]: https://github.com/coreweave/tensorizer/compare/v2.11.1...HEAD
+[2.12.0]: https://github.com/coreweave/tensorizer/compare/v2.11.1...v2.12.0
 [2.11.1]: https://github.com/coreweave/tensorizer/compare/v2.11.0...v2.11.1
 [2.11.0]: https://github.com/coreweave/tensorizer/compare/v2.10.1...v2.11.0
 [2.10.1]: https://github.com/coreweave/tensorizer/compare/v2.10.0...v2.10.1

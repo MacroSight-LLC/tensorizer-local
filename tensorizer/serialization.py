@@ -238,6 +238,7 @@ class TensorEntry:
 
 class _FileFeatureFlags(enum.IntFlag):
     encrypted = enum.auto()
+    versioned_headers = enum.auto()
 
 
 @dataclasses.dataclass
@@ -310,7 +311,7 @@ class _FileHeader:
             feature_flag_bytes, "little", signed=False
         )
         feature_flags = _FileFeatureFlags(feature_flag_int)
-        if not (0 <= feature_flags <= max(_FileFeatureFlags)):
+        if not (0 <= feature_flags < (max(_FileFeatureFlags) << 1)):
             raise ValueError(
                 f"Unsupported feature flags: {_FileFeatureFlags!r}"
             )
@@ -1838,8 +1839,17 @@ class TensorDeserializer(
                     "Tensor is encrypted, but decryption was not requested"
                 )
             self._has_versioned_metadata: bool = (
-                version_number >= LONG_TENSOR_TENSORIZER_VERSION
+                _FileFeatureFlags.versioned_headers in self._file_flags
             )
+            if (
+                self._has_versioned_metadata
+                and version_number < LONG_TENSOR_TENSORIZER_VERSION
+            ):
+                raise ValueError(
+                    "Invalid feature flag present in file header for a file"
+                    f" with version {version_number:d}"
+                    f" (flags: {self._file_flags!s})"
+                )
 
             # The total size of the file.
             # WARNING: this is not accurate. This field isn't used in the
@@ -3904,6 +3914,10 @@ class TensorSerializer:
         if pos + total_length > self._metadata_end:
             raise RuntimeError("Metadata overflow")
         self._pwrite_bulk(buffers, pos, total_length)
+        if self._metadata_handler.is_versioned:
+            self._file_header.feature_flags |= (
+                _FileFeatureFlags.versioned_headers
+            )
 
     def _pwrite_bulk(
         self, buffers: Sequence[bytes], offset: int, expected_length: int
@@ -3937,7 +3951,7 @@ class TensorSerializer:
         metadata entries need to be rewritten because of other entries written
         in subsequent batches.
 
-        Internally, it functions like a state machine.
+        Internally, it has two states.
 
         In its initial state, it tracks pending metadata entries to be written,
         as well as past metadata entries that were already written. It stays
@@ -3948,55 +3962,32 @@ class TensorSerializer:
         Once it is given any tensor using a metadata scheme newer than V1,
         it transitions to its second state. In this state, all
         previously-written metadata entries are moved back into a pending state,
-        and version tags are prepended to every entry. It stays in this state
-        until the next write operation (i.e. the next call to ``commit()``),
-        after which it moves into its final state.
-
-        In its final state, no more history is saved for previously-written
-        metadata entries, as historical entries will at this point never again
-        need to be rewritten. Version tags continue to be prepended
-        to new entries. It remains in this state forever.
+        and version tags are prepended to every entry. No more history is saved
+        for newly-written metadata entries, as historical entries will at
+        this point never again need to be rewritten.
         """
 
-        __slots__ = ("pending", "past", "version", "_pos", "_state")
+        __slots__ = ("pending", "past", "version", "_pos", "_is_updated")
         pending: list
         past: list
         version: int
         _pos: int
 
-        class _MetadataHandlerState(enum.Enum):
-            TRACKING_PAST = 1
-            STAGING_PAST = 2
-            NO_PAST = 3
-
-        _state: _MetadataHandlerState
         V1_TAG: ClassVar[bytes] = b"\x01\x00\x00\x00"
-
-        @property
-        def _tracking_past(self) -> bool:
-            return self._state is self._MetadataHandlerState.TRACKING_PAST
-
-        @property
-        def _staging_past(self) -> bool:
-            return self._state is self._MetadataHandlerState.STAGING_PAST
-
-        @property
-        def _no_past(self) -> bool:
-            return self._state is self._MetadataHandlerState.NO_PAST
 
         def __init__(self):
             self.pending = []
             self.past = []
             self.version = 1
             self._pos = 0
-            self._state = self._MetadataHandlerState.TRACKING_PAST
+            self._is_updated = False
 
         def submit(self, metadata: bytes, version: int):
             if version > self.version:
                 if self.version == 1:
                     self._update()
                 self.version = version
-            if not self._tracking_past:
+            if self._is_updated:
                 self.pending.append(version.to_bytes(4, byteorder="little"))
             self.pending.append(metadata)
 
@@ -4005,10 +3996,8 @@ class TensorSerializer:
             # Successive write positions are not a monotone sequence
             pending = self.pending
             self.pending = []
-            if self._tracking_past:
+            if not self._is_updated:
                 self.past.extend(pending)
-            elif self._staging_past:
-                self._state = self._MetadataHandlerState.NO_PAST
             total_length = sum(len(d) for d in pending)
             pos = self._pos
             self._pos += total_length
@@ -4017,7 +4006,7 @@ class TensorSerializer:
         def _update(self):
             # This is only called the one time that self.version is updated
             # up from 1, so this should always be in the initial state
-            assert self._tracking_past
+            assert not self._is_updated
             # At the time this is called, everything in self.past and
             # self.pending must be version 1, so no complicated checking is
             # needed to figure out what needs to be tagged with a v1 tag
@@ -4029,7 +4018,11 @@ class TensorSerializer:
             self.pending = pending
             self.past.clear()
             self._pos = 0
-            self._state = self._MetadataHandlerState.STAGING_PAST
+            self._is_updated = True
+
+        @property
+        def is_versioned(self) -> bool:
+            return self.version > 1
 
     def write_tensor(
         self,
