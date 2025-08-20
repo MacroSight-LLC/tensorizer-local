@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tensors with long dimensions (≥ `2 ** 32` elements in a single dimension)
   can now be serialized and deserialized
 
+### Changed
+
+- `tensorizer.utils.CPUMemoryUsage.free` now reports available memory
+  rather than free memory
+
 ### Fixed
 
 - `tensorizer.torch_compat` can now serialize and deserialize tensors that have
