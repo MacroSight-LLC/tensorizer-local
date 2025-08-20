@@ -238,6 +238,7 @@ class TensorEntry:
 
 class _FileFeatureFlags(enum.IntFlag):
     encrypted = enum.auto()
+    versioned_headers = enum.auto()
 
 
 @dataclasses.dataclass
@@ -1838,8 +1839,17 @@ class TensorDeserializer(
                     "Tensor is encrypted, but decryption was not requested"
                 )
             self._has_versioned_metadata: bool = (
-                version_number >= LONG_TENSOR_TENSORIZER_VERSION
+                _FileFeatureFlags.versioned_headers in self._file_flags
             )
+            if (
+                self._has_versioned_metadata
+                and version_number < LONG_TENSOR_TENSORIZER_VERSION
+            ):
+                raise ValueError(
+                    "Invalid feature flag present in file header for a file"
+                    f" with version {version_number:d}"
+                    f" (flags: {self._file_flags!s})"
+                )
 
             # The total size of the file.
             # WARNING: this is not accurate. This field isn't used in the
@@ -3904,6 +3914,10 @@ class TensorSerializer:
         if pos + total_length > self._metadata_end:
             raise RuntimeError("Metadata overflow")
         self._pwrite_bulk(buffers, pos, total_length)
+        if self._metadata_handler.is_versioned:
+            self._file_header.feature_flags |= (
+                _FileFeatureFlags.versioned_headers
+            )
 
     def _pwrite_bulk(
         self, buffers: Sequence[bytes], offset: int, expected_length: int
@@ -4005,6 +4019,10 @@ class TensorSerializer:
             self.past.clear()
             self._pos = 0
             self._is_updated = True
+
+        @property
+        def is_versioned(self) -> bool:
+            return self.version > 1
 
     def write_tensor(
         self,
