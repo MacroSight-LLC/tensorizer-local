@@ -1,4 +1,25 @@
 # tensorizer
+
+[![CI](https://github.com/coreweave/tensorizer/actions/workflows/build-and-deploy.yml/badge.svg)](https://github.com/coreweave/tensorizer/actions/workflows/build-and-deploy.yml)
+[![Container Scan](https://img.shields.io/badge/scan-trivy-blue)](#)
+[![Lint](https://img.shields.io/badge/lint-black%20%2B%20isort-brightgreen)](#)
+
+CoreWeave full‑stack example showing SUNK, Tensorizer, vLLM and observability.
+
+![Architecture](docs/img/architecture.svg)
+
+## Quickstart Map
+
+- [Overview](docs/overview.md)
+- [SUNK](docs/sunk.md)
+- [Schedule K8s Pods with Slurm](docs/schedule-k8s-with-slurm.md)
+- [Tensorizer](docs/tensorizer.md)
+- [vLLM](docs/vllm.md)
+- [Observability](docs/observability.md)
+- [CI/CD](docs/cicd.md)
+- [Security](docs/cks.md)
+
+# tensorizer
 Module, Model, and Tensor Serialization/Deserialization
 
 ## TLDR

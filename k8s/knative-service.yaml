@@ -1,0 +1,15 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: tensorizer-knative
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "0"
+    spec:
+      containers:
+        - image: vllm/vllm:latest
+          args: ["serve", "--model", "s3://my-bucket/models/tiny-gpt2.tensors", "--tensorizer"]
+          ports:
+            - containerPort: 8000
