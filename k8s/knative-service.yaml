@@ -9,7 +9,18 @@ spec:
         autoscaling.knative.dev/minScale: "0"
     spec:
       containers:
-        - image: vllm/vllm:latest
+        - image: vllm/vllm:0.2.2
           args: ["serve", "--model", "s3://my-bucket/models/tiny-gpt2.tensors", "--tensorizer"]
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: s3-credentials
+                  key: accessKeyId
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: s3-credentials
+                  key: secretAccessKey
           ports:
             - containerPort: 8000

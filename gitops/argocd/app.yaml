@@ -9,7 +9,7 @@ spec:
   source:
     repoURL: https://github.com/coreweave/tensorizer
     path: helm/tensorizer-vllm
-    targetRevision: HEAD
+    targetRevision: main
   project: default
   syncPolicy:
     automated:

@@ -18,3 +18,16 @@ spec:
           args: ["serve", "--model", "{{ .Values.modelURI }}", "--tensorizer"]
           ports:
             - containerPort: 8000
+          {{- if .Values.s3.secretName }}
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.s3.secretName }}
+                  key: accessKeyId
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.s3.secretName }}
+                  key: secretAccessKey
+          {{- end }}
