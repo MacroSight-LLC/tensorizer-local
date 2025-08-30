@@ -15,8 +15,9 @@ invoking the model.
 
 1. The `kube-state-metrics` and `node-exporter` dashboards show cluster health.
 2. vLLM exports Prometheus metrics such as `vllm_engine_execution_time`.
-3. Logs are collected via Loki; search by `app=vllm`.
-4. For a local demo use the [`observability/` example](../examples/observability/grafana/README.md)
+3. Ensure Prometheus scrapes the vLLM service on port `8000` to populate Grafana.
+4. Logs are collected via Loki; search by `app=vllm`.
+5. For a local demo use the [`observability/` example](../examples/observability/grafana/README.md)
 which spins up Prometheus and Grafana with Docker Compose.
 
 Screenshots can be added to `docs/img/` for presentations.

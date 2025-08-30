@@ -7,6 +7,7 @@ it to an S3 bucket, and then demonstrates lazy loading with multiple readers.
 import argparse
 import os
 import threading
+from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 import torch
@@ -30,8 +31,8 @@ def upload_to_s3(path: str, bucket: str, key: str) -> None:
 
 def serve_file(path: str, port: int) -> threading.Thread:
     directory = os.path.dirname(os.path.abspath(path))
-    os.chdir(directory)
-    server = ThreadingHTTPServer(("0.0.0.0", port), SimpleHTTPRequestHandler)
+    handler = partial(SimpleHTTPRequestHandler, directory=directory)
+    server = ThreadingHTTPServer(("0.0.0.0", port), handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     return thread
