@@ -1,3 +1,12 @@
+import os
+
+import pytest
+
+if not os.environ.get("RUN_FULL_TESTS"):
+    pytest.skip(
+        "Set RUN_FULL_TESTS=1 to run integration tests", allow_module_level=True
+    )
+
 import contextlib
 import ctypes
 import enum
