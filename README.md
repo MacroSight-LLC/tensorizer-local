@@ -99,6 +99,26 @@ Or, run the following for `pip` to install `tensorizer`
 python -m pip install git+https://github.com/coreweave/tensorizer
 ```
 
+## Testing
+The repository contains integration tests that require network access and
+large model downloads. These are skipped by default. To run the lightweight
+offline tests simply execute:
+
+```bash
+pytest -q
+```
+
+Set ``RUN_FULL_TESTS=1`` in the environment to enable the full suite.
+
+## Benchmarking
+A reproducible serialization benchmark is available under
+``benchmarks/serialization_benchmark.py``. It measures serialization and
+deserialization time on a synthetic model and runs entirely offline.
+
+```bash
+python benchmarks/serialization_benchmark.py --layers 4 --hidden-size 256 --repeat 5
+```
+
 ## Basic Usage
 Serialization is done with the `TensorSerializer` class. It takes a
 `path_uri` argument that can be a local filesystem path, an HTTP/HTTPS
@@ -263,7 +283,10 @@ with a randomly-generated encryption key:
 
 ```py
 from tensorizer import (
-    EncryptionParams, DecryptionParams, TensorDeserializer, TensorSerializer
+    DecryptionParams,
+    EncryptionParams,
+    TensorDeserializer,
+    TensorSerializer,
 )
 
 # Serialize and encrypt a model:
@@ -375,6 +398,7 @@ Saving this way produces two files, one for tensors, and one for all other data.
 
 ```py
 import torch
+
 from tensorizer.torch_compat import tensorizer_loading, tensorizer_saving
 
 model: torch.nn.Module = ...
@@ -426,6 +450,7 @@ The default `file_obj` callback simply appends `.tensors` to the path.
 
 ```py
 import torch
+
 from tensorizer.torch_compat import tensorizer_loading, tensorizer_saving
 
 
@@ -474,8 +499,9 @@ temporarily swap out the `torch.save` and `torch.load` functions, note that they
 will not affect already-saved references to those functions, e.g.:
 
 ```py
-from tensorizer.torch_compat import tensorizer_saving
 from torch import save as original_torch_save
+
+from tensorizer.torch_compat import tensorizer_saving
 
 with tensorizer_saving():
     # This won't work, but torch.save(..., "model.pt") would work
